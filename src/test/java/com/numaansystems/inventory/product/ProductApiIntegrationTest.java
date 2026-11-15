@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -58,6 +59,71 @@ class ProductApiIntegrationTest extends IntegrationTest {
         mvc.perform(get("/api/products").param("active", "true"))
                 .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].sku").value("PEP-100G"));
+    }
+
+    @Test
+    void storesCategoryAndFiltersByIt() throws Exception {
+        postJson("/api/products", """
+                {"sku": "CLV-100G", "name": "Cloves", "category": "WHOLE_SPICES", "unit": "GRAM", "packSize": 100}
+                """)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.category").value("WHOLE_SPICES"));
+        postJson("/api/products", """
+                {"sku": "GAR-100G", "name": "Garam masala", "category": "BLENDED_SPICES", "unit": "GRAM",
+                 "packSize": 100, "active": false}
+                """).andExpect(status().isCreated());
+        long uncategorised = createProduct("MISC-1");
+
+        mvc.perform(get("/api/products/" + uncategorised))
+                .andExpect(jsonPath("$.category").value(nullValue()));
+
+        mvc.perform(get("/api/products").param("category", "WHOLE_SPICES"))
+                .andExpect(jsonPath("$.content[*].sku").value(contains("CLV-100G")));
+
+        mvc.perform(get("/api/products").param("category", "BLENDED_SPICES").param("active", "true"))
+                .andExpect(jsonPath("$.content", hasSize(0)));
+
+        mvc.perform(get("/api/stock"))
+                .andExpect(jsonPath("$.content[?(@.sku == 'CLV-100G')].category").value("WHOLE_SPICES"))
+                .andExpect(jsonPath("$.content[?(@.sku == 'GAR-100G')].active").value(false));
+    }
+
+    @Test
+    void clearsCategoryWhenUpdateOmitsIt() throws Exception {
+        String body = postJson("/api/products", """
+                {"sku": "TUR-100G", "name": "Turmeric", "category": "SPICES_SEASONINGS", "unit": "GRAM",
+                 "packSize": 100}
+                """).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        int id = com.jayway.jsonpath.JsonPath.read(body, "$.id");
+
+        mvc.perform(put("/api/products/" + id).contentType(MediaType.APPLICATION_JSON).content("""
+                {"sku": "TUR-100G", "name": "Turmeric", "unit": "GRAM", "packSize": 100}
+                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.category").value(nullValue()));
+    }
+
+    @Test
+    void listsCategoriesInDisplayOrder() throws Exception {
+        mvc.perform(get("/api/products/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(8)))
+                .andExpect(jsonPath("$[0].code").value("SPICES_SEASONINGS"))
+                .andExpect(jsonPath("$[0].label").value("Spices & Seasonings"))
+                .andExpect(jsonPath("$[7].code").value("RICE"));
+    }
+
+    @Test
+    void rejectsUnknownCategory() throws Exception {
+        postJson("/api/products", """
+                {"sku": "NUT-100G", "name": "Nutmeg", "category": "FRUIT", "unit": "GRAM", "packSize": 100}
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+
+        mvc.perform(get("/api/products").param("category", "FRUIT"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
     }
 
     @Test

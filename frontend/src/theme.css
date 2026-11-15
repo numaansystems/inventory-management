@@ -1,0 +1,28 @@
+/*
+ * Brand palette.
+ *
+ * PROVISIONAL: these values are a warm spice palette chosen by eye. They have not been
+ * matched against bumispices.com yet. Every colour in the app comes from the variables
+ * below, so matching the storefront means editing this file only.
+ */
+:root {
+  --brand: #b23a1e; /* primary: header, primary buttons */
+  --brand-dark: #8c2a14; /* hover / pressed */
+  --accent: #e0a526; /* highlights, active tab marker */
+  --accent-soft: #fbefd0;
+  --positive: #3f6b3a; /* in stock, receive */
+  --positive-soft: #e4efe1;
+  --warning: #a86a00; /* low stock */
+  --warning-soft: #fdf0d2;
+  --danger: #a3271b; /* out of stock, errors, delete */
+  --danger-soft: #f9e0dc;
+
+  --ink: #2b1d14; /* main text */
+  --ink-muted: #6f5f52;
+  --bg: #fbf6ec; /* page background */
+  --surface: #ffffff;
+  --border: #e7dcc8;
+
+  --font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --radius: 8px;
+}

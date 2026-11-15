@@ -34,8 +34,8 @@ public class ProductService {
     /** Creates the product together with an empty stock level. */
     public Product create(ProductRequest request) {
         requireUniqueSku(request.sku());
-        Product product = new Product(request.sku(), request.name(), request.description(), request.unit(),
-                request.packSize(), request.activeOrDefault(), clock.instant());
+        Product product = new Product(request.sku(), request.name(), request.description(), request.category(),
+                request.unit(), request.packSize(), request.activeOrDefault(), clock.instant());
         products.save(product);
         stockLevels.save(new StockLevel(product, clock.instant()));
         return product;
@@ -47,8 +47,13 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Product> list(Boolean active, Pageable pageable) {
-        return active == null ? products.findAll(pageable) : products.findByActive(active, pageable);
+    public Page<Product> list(Boolean active, ProductCategory category, Pageable pageable) {
+        if (category == null) {
+            return active == null ? products.findAll(pageable) : products.findByActive(active, pageable);
+        }
+        return active == null
+                ? products.findByCategory(category, pageable)
+                : products.findByActiveAndCategory(active, category, pageable);
     }
 
     public Product update(long id, ProductRequest request) {
@@ -56,8 +61,8 @@ public class ProductService {
         if (!product.getSku().equals(request.sku())) {
             requireUniqueSku(request.sku());
         }
-        product.update(request.sku(), request.name(), request.description(), request.unit(), request.packSize(),
-                request.activeOrDefault(), clock.instant());
+        product.update(request.sku(), request.name(), request.description(), request.category(), request.unit(),
+                request.packSize(), request.activeOrDefault(), clock.instant());
         return product;
     }
 

@@ -8,7 +8,10 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
-/** Payload for creating or replacing a product. {@code active} defaults to {@code true} when omitted. */
+/**
+ * Payload for creating or replacing a product. {@code category} is optional; {@code active} defaults to
+ * {@code true} when omitted.
+ */
 public record ProductRequest(
         @NotBlank
         @Pattern(regexp = "^[A-Z0-9][A-Z0-9-]{1,39}$",
@@ -16,6 +19,7 @@ public record ProductRequest(
         String sku,
         @NotBlank @Size(max = 200) String name,
         @Size(max = 2000) String description,
+        ProductCategory category,
         @NotNull Unit unit,
         @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 9, fraction = 3) BigDecimal packSize,
         Boolean active) {

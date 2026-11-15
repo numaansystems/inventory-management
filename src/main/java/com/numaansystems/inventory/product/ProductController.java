@@ -3,6 +3,8 @@ package com.numaansystems.inventory.product;
 import com.numaansystems.inventory.common.PageResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -38,8 +40,15 @@ class ProductController {
     @GetMapping
     PageResponse<ProductResponse> list(
             @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) ProductCategory category,
             @PageableDefault(size = 50, sort = "sku", direction = Sort.Direction.ASC) Pageable pageable) {
-        return PageResponse.of(service.list(active, pageable), ProductResponse::from);
+        return PageResponse.of(service.list(active, category, pageable), ProductResponse::from);
+    }
+
+    /** The fixed list of catalogue categories, in display order. */
+    @GetMapping("/categories")
+    List<ProductCategoryResponse> categories() {
+        return Arrays.stream(ProductCategory.values()).map(ProductCategoryResponse::from).toList();
     }
 
     @GetMapping("/{id}")
