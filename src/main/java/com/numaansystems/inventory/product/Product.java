@@ -37,6 +37,10 @@ public class Product {
     @Column(name = "pack_size", nullable = false, precision = 12, scale = 3)
     private BigDecimal packSize;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    private ProductCategory category;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -51,11 +55,19 @@ public class Product {
 
     protected Product() {}
 
+    /** Creates an uncategorised product. */
     public Product(
             String sku, String name, String description, Unit unit, BigDecimal packSize, boolean active, Instant now) {
+        this(sku, name, description, null, unit, packSize, active, now);
+    }
+
+    public Product(
+            String sku, String name, String description, ProductCategory category, Unit unit, BigDecimal packSize,
+            boolean active, Instant now) {
         this.sku = sku;
         this.name = name;
         this.description = description;
+        this.category = category;
         this.unit = unit;
         this.packSize = packSize;
         this.active = active;
@@ -63,11 +75,19 @@ public class Product {
         this.updatedAt = now;
     }
 
+    /** Replaces the product's details, keeping its current category. */
     public void update(
             String sku, String name, String description, Unit unit, BigDecimal packSize, boolean active, Instant now) {
+        update(sku, name, description, this.category, unit, packSize, active, now);
+    }
+
+    public void update(
+            String sku, String name, String description, ProductCategory category, Unit unit, BigDecimal packSize,
+            boolean active, Instant now) {
         this.sku = sku;
         this.name = name;
         this.description = description;
+        this.category = category;
         this.unit = unit;
         this.packSize = packSize;
         this.active = active;
@@ -88,6 +108,11 @@ public class Product {
 
     public String getDescription() {
         return description;
+    }
+
+    /** May be {@code null} for products that have not been categorised. */
+    public ProductCategory getCategory() {
+        return category;
     }
 
     public Unit getUnit() {

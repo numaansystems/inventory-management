@@ -1,6 +1,7 @@
 package com.numaansystems.inventory.stock;
 
 import com.numaansystems.inventory.product.Product;
+import com.numaansystems.inventory.product.ProductCategory;
 import com.numaansystems.inventory.product.Unit;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -13,6 +14,8 @@ public record StockLevelResponse(
         Long productId,
         String sku,
         String name,
+        ProductCategory category,
+        boolean active,
         long quantity,
         Unit unit,
         BigDecimal packSize,
@@ -25,6 +28,8 @@ public record StockLevelResponse(
                 product.getId(),
                 product.getSku(),
                 product.getName(),
+                product.getCategory(),
+                product.isActive(),
                 level.getQuantity(),
                 product.getUnit(),
                 product.getPackSize(),

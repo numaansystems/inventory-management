@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 Inventory, order and invoice management platform for a spice distribution business.
-This repo currently holds the backend: products, stock levels and stock movements.
-Orders, invoices and the frontend are planned follow-ups.
+This repo holds the backend (products, stock levels, stock movements) and a React web UI for them in `frontend/`.
+Orders and invoices are planned follow-ups. There is no authentication yet; the app is run locally only.
 
 ## Stack
 
@@ -11,7 +11,9 @@ Orders, invoices and the frontend are planned follow-ups.
 - Spring Web MVC, Spring Data JPA, Bean Validation, Actuator
 - Flyway migrations in `src/main/resources/db/migration`; PostgreSQL at runtime, H2 (PostgreSQL mode) in tests
 - JUnit 5, AssertJ, Mockito, MockMvc
-- CI: `.github/workflows/build.yml` runs `./gradlew build` on every PR and on pushes to `main`
+- Frontend: React 19 + Vite + TypeScript in `frontend/` (no router or UI library; plain CSS)
+- CI: `.github/workflows/build.yml` runs `./gradlew build` and the frontend `npm run build` on every PR and on
+  pushes to `main`
 
 Boot 4 is modular: starters are per technology (`spring-boot-starter-webmvc`, `spring-boot-starter-flyway`,
 `spring-boot-starter-webmvc-test`, ...) and test annotations moved packages
@@ -26,6 +28,11 @@ Boot 4 is modular: starters are per technology (`spring-boot-starter-webmvc`, `s
 ./gradlew test --tests '*StockServiceTest'
 ./gradlew bootRun               # needs PostgreSQL, see below
 docker compose up -d            # local PostgreSQL matching the default datasource settings
+./gradlew bootRun --args='--spring.profiles.active=local'   # also seeds the starter catalogue
+
+cd frontend && npm install
+npm run dev                     # UI on :5173, proxies /api to the backend on :8080
+npm run build                   # type-check + production build; must pass before opening a PR
 ```
 
 The app reads `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` (defaults: `jdbc:postgresql://localhost:5432/inventory`,
@@ -37,16 +44,23 @@ The app reads `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` (defaults: `jdbc:postgresql
 Package-by-feature under `com.numaansystems.inventory`:
 
 - `common` — error handling (`ApiExceptionHandler`), shared exceptions, `PageResponse`, `Clock` bean
-- `product` — `Product` entity, CRUD service and `/api/products` controller
+- `product` — `Product` entity, `ProductCategory`, CRUD service and `/api/products` controller;
+  `BumiCatalogueSeeder` (profile `local` only) creates placeholder starter products
 - `stock` — `StockLevel`, `StockMovement`, `StockMovementType`, `StockService` and stock endpoints
 
 Each feature keeps entity, repository, service, controller and request/response records together.
 Controllers, service constructors and response factory methods are package-private where possible.
 
+Frontend (`frontend/src`): `api.ts` is the only place that calls the backend and mirrors the Java records;
+`StockPage.tsx` and `ProductsPage.tsx` are the two screens; `theme.css` holds every colour as a CSS variable
+(components must not hard-code colours); `format.ts` holds number/unit/date formatting.
+
 ## Domain rules
 
 - A product is sold in packs: `packSize` (decimal, > 0) of `unit` (`GRAM`, `KILOGRAM`, `MILLILITRE`, `LITRE`, `PIECE`).
   SKUs are unique, 2–40 chars of `A-Z`, `0-9`, `-`.
+- A product may have a `category` (`ProductCategory`, mirroring the bumispices.com catalogue sections); it is
+  optional. Adding a category means adding an enum constant; the UI reads the list from `/api/products/categories`.
 - Stock is counted in whole packs (`long`). Every product has exactly one `stock_levels` row, created with the product.
 - `StockService` is the only code allowed to change stock. Each change writes an append-only `stock_movements`
   row (signed `quantityChange`, `balanceAfter`) in the same transaction, so the ledger always sums to the level.
