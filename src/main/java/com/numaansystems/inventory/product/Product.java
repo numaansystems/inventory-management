@@ -75,6 +75,12 @@ public class Product {
         this.updatedAt = now;
     }
 
+    /** Replaces the product's details, keeping its current category. */
+    public void update(
+            String sku, String name, String description, Unit unit, BigDecimal packSize, boolean active, Instant now) {
+        update(sku, name, description, this.category, unit, packSize, active, now);
+    }
+
     public void update(
             String sku, String name, String description, ProductCategory category, Unit unit, BigDecimal packSize,
             boolean active, Instant now) {
